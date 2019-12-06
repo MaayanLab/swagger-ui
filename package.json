@@ -1,5 +1,5 @@
 {
-  "name": "swagger-ui",
+  "name": "swagger-ui-patched",
   "version": "3.24.3",
   "main": "dist/swagger-ui.js",
   "homepage": "https://github.com/swagger-api/swagger-ui",
@@ -7,6 +7,7 @@
   "contributors": [
     "(in alphabetical order)",
     "Anna Bodnia <anna.bodnia@gmail.com>",
+    "Daniel Clarke <u8sand@gmail.com>",
     "Buu Nguyen <buunguyen@gmail.com>",
     "Josh Ponelat <jponelat@gmail.com>",
     "Kyle Shockey <kyleshockey@gmail.com>",
