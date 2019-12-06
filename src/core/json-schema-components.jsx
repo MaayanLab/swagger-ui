@@ -84,6 +84,8 @@ export class JsonSchema_string extends Component {
 
     const isDisabled = disabled || (schema["in"] === "formData" && !("FormData" in window))
     const Input = getComponent("Input")
+    const isMultiLine = schema["example"] !== undefined && schema["example"].indexOf("\n") !== -1
+
     if (schema["type"] === "file") {
       return (<Input type="file"
                      className={ errors.length ? "invalid" : ""}
@@ -94,6 +96,7 @@ export class JsonSchema_string extends Component {
     else {
       return (<DebounceInput
                      type={ schema.format === "password" ? "password" : "text" }
+                     element={ isMultiLine && schema.format !== "password" ? "textarea" : undefined }
                      className={ errors.length ? "invalid" : ""}
                      title={ errors.length ? errors : ""}
                      value={value}
