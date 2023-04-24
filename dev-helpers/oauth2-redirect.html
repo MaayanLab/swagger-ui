@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en-US">
-<body onload="run()">
+<body>
 </body>
 </html>
 <script>
@@ -12,7 +12,7 @@
         var isValid, qp, arr;
 
         if (/code|token|error/.test(window.location.hash)) {
-            qp = window.location.hash.substring(1);
+            qp = window.location.hash.substring(1).replace('?', '&');
         } else {
             qp = location.search.substring(1);
         }
@@ -28,8 +28,9 @@
         isValid = qp.state === sentState
 
         if ((
-          oauth2.auth.schema.get("flow") === "accessCode"||
-          oauth2.auth.schema.get("flow") === "authorizationCode"
+          oauth2.auth.schema.get("flow") === "accessCode" ||
+          oauth2.auth.schema.get("flow") === "authorizationCode" ||
+          oauth2.auth.schema.get("flow") === "authorization_code"
         ) && !oauth2.auth.code) {
             if (!isValid) {
                 oauth2.errCb({
@@ -63,5 +64,13 @@
             oauth2.callback({auth: oauth2.auth, token: qp, isValid: isValid, redirectUrl: redirectUrl});
         }
         window.close();
+    }
+
+    if( document.readyState !== 'loading' ) {
+      run();
+    } else {
+      document.addEventListener('DOMContentLoaded', function () {
+        run();
+      });
     }
 </script>

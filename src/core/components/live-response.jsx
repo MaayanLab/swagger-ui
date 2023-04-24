@@ -1,7 +1,6 @@
 import React from "react"
 import PropTypes from "prop-types"
 import ImPropTypes from "react-immutable-proptypes"
-import { Iterable } from "immutable"
 
 const Headers = ( { headers } )=>{
   return (
@@ -29,7 +28,7 @@ Duration.propTypes = {
 
 export default class LiveResponse extends React.Component {
   static propTypes = {
-    response: PropTypes.instanceOf(Iterable).isRequired,
+    response: ImPropTypes.map,
     path: PropTypes.string.isRequired,
     method: PropTypes.string.isRequired,
     displayRequestDuration: PropTypes.bool.isRequired,
@@ -49,7 +48,7 @@ export default class LiveResponse extends React.Component {
 
   render() {
     const { response, getComponent, getConfigs, displayRequestDuration, specSelectors, path, method } = this.props
-    const { showMutatedRequest } = getConfigs()
+    const { showMutatedRequest, requestSnippetsEnabled } = getConfigs()
 
     const curlRequest = showMutatedRequest ? specSelectors.mutatedRequestFor(path, method) : specSelectors.requestFor(path, method)
     const status = response.get("status")
@@ -62,19 +61,24 @@ export default class LiveResponse extends React.Component {
     const headersKeys = Object.keys(headers)
     const contentType = headers["content-type"] || headers["Content-Type"]
 
-    const Curl = getComponent("curl")
     const ResponseBody = getComponent("responseBody")
     const returnObject = headersKeys.map(key => {
-      return <span className="headerline" key={key}> {key}: {headers[key]} </span>
+      var joinedHeaders = Array.isArray(headers[key]) ? headers[key].join() : headers[key]
+      return <span className="headerline" key={key}> {key}: {joinedHeaders} </span>
     })
     const hasHeaders = returnObject.length !== 0
+    const Markdown = getComponent("Markdown", true)
+    const RequestSnippets = getComponent("RequestSnippets", true)
+    const Curl = getComponent("curl")
 
     return (
       <div>
-        { curlRequest && <Curl request={ curlRequest }/> }
+        { curlRequest && (requestSnippetsEnabled === true || requestSnippetsEnabled === "true"
+          ? <RequestSnippets request={ curlRequest }/>
+          : <Curl request={ curlRequest } getConfigs={ getConfigs } />) }
         { url && <div>
-            <h4>Request URL</h4>
             <div className="request-url">
+              <h4>Request URL</h4>
               <pre className="microlight">{url}</pre>
             </div>
           </div>
@@ -100,9 +104,7 @@ export default class LiveResponse extends React.Component {
               </td>
               <td className="response-col_description">
                 {
-                  isError ? <span>
-                              {`${response.get("name")}: ${response.get("message")}`}
-                            </span>
+                  isError ? <Markdown source={`${response.get("name") !== "" ? `${response.get("name")}: ` : ""}${response.get("message")}`}/>
                           : null
                 }
                 {
@@ -110,6 +112,7 @@ export default class LiveResponse extends React.Component {
                                        contentType={ contentType }
                                        url={ url }
                                        headers={ headers }
+                                       getConfigs={ getConfigs }
                                        getComponent={ getComponent }/>
                        : null
                 }
@@ -125,10 +128,5 @@ export default class LiveResponse extends React.Component {
         </table>
       </div>
     )
-  }
-
-  static propTypes = {
-    getComponent: PropTypes.func.isRequired,
-    response: ImPropTypes.map
   }
 }

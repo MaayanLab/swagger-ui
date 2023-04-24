@@ -38,6 +38,12 @@ table
 
             @include text_code();
         }
+
+        .header-example
+        {
+            color: #999;
+            font-style: italic;
+        }
     }
 
     tbody
@@ -52,7 +58,6 @@ table
 
                 &:first-of-type
                 {
-                    max-width: 20%;
                     min-width: 6em;
                     padding: 10px 0;
                 }
@@ -86,7 +91,7 @@ table
 {
     width: 99%; // forces other columns to shrink to their content widths
     margin-bottom: 2em;
-    input[type=text]
+    input
     {
         width: 100%;
         max-width: 340px;
@@ -94,6 +99,12 @@ table
 
     select {
         border-width: 1px;
+    }
+
+    .markdown {
+        p {
+            margin: 0;
+        }
     }
 }
 
@@ -111,6 +122,11 @@ table
     &.required
     {
         font-weight: bold;
+
+        span
+        {
+            color: red;
+        }
 
         &:after
         {
@@ -146,6 +162,7 @@ table
 }
 
 .parameter__empty_value_toggle {
+    display: block;
     font-size: 13px;
     padding-top: 5px;
     padding-bottom: 12px;
@@ -168,8 +185,22 @@ table
 
 .response-col_description {
     width: 99%; // forces other columns to shrink to their content widths
+
+    .markdown {
+        p {
+            margin: 0;
+        }
+    }
 }
 
 .response-col_links {
     min-width: 6em;
+}
+
+.response__extension
+{
+    font-size: 12px;
+    font-style: italic;
+
+    @include text_code($table-parameter-in-font-color);
 }

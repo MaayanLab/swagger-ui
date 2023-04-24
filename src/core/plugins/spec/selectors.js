@@ -314,7 +314,6 @@ export const parameterWithMetaByIdentity = (state, pathMethod, param) => {
       hashKeyedMeta
     )
   })
-
   return mergedParams.find(curr => curr.get("in") === param.get("in") && curr.get("name") === param.get("name"), OrderedMap())
 }
 
@@ -327,7 +326,6 @@ export const parameterInclusionSettingFor = (state, pathMethod, paramName, param
 export const parameterWithMeta = (state, pathMethod, paramName, paramIn) => {
   const opParams = specJsonWithResolvedSubtrees(state).getIn(["paths", ...pathMethod, "parameters"], OrderedMap())
   const currentParam = opParams.find(param => param.get("in") === paramIn && param.get("name") === paramName, OrderedMap())
-
   return parameterWithMetaByIdentity(state, pathMethod, currentParam)
 }
 
@@ -364,7 +362,6 @@ export const hasHost = createSelector(
 // Get the parameter values, that the user filled out
 export function parameterValues(state, pathMethod, isXml) {
   pathMethod = pathMethod || []
-  // let paramValues = state.getIn(["meta", "paths", ...pathMethod, "parameters"], fromJS([]))
   let paramValues = operationWithMeta(state, ...pathMethod).get("parameters", List())
   return paramValues.reduce( (hash, p) => {
     let value = isXml && p.get("in") === "body" ? p.get("value_xml") : p.get("value")
@@ -480,19 +477,59 @@ export const canExecuteScheme = ( state, path, method ) => {
   return ["http", "https"].indexOf(operationScheme(state, path, method)) > -1
 }
 
-export const validateBeforeExecute = ( state, pathMethod ) => {
+export const validationErrors = (state, pathMethod) => {
   pathMethod = pathMethod || []
   let paramValues = state.getIn(["meta", "paths", ...pathMethod, "parameters"], fromJS([]))
-  let isValid = true
+  const result = []
 
   paramValues.forEach( (p) => {
     let errors = p.get("errors")
     if ( errors && errors.count() ) {
-      isValid = false
+      errors.forEach( e => result.push(e))
     }
   })
 
-  return isValid
+  return result
+}
+
+export const validateBeforeExecute = (state, pathMethod) => {
+  return validationErrors(state, pathMethod).length === 0
+}
+
+export const getOAS3RequiredRequestBodyContentType = (state, pathMethod) => {
+  let requiredObj = {
+    requestBody: false,
+    requestContentType: {}
+  }
+  let requestBody = state.getIn(["resolvedSubtrees", "paths", ...pathMethod, "requestBody"], fromJS([]))
+  if (requestBody.size < 1) {
+    return requiredObj
+  }
+  if (requestBody.getIn(["required"])) {
+    requiredObj.requestBody = requestBody.getIn(["required"])
+  }
+  requestBody.getIn(["content"]).entrySeq().forEach((contentType) => { // e.g application/json
+    const key = contentType[0]
+    if (contentType[1].getIn(["schema", "required"])) {
+      const val = contentType[1].getIn(["schema", "required"]).toJS()
+      requiredObj.requestContentType[key] = val
+    }
+  })
+  return requiredObj
+}
+
+export const isMediaTypeSchemaPropertiesEqual = ( state, pathMethod, currentMediaType, targetMediaType) => {
+  if((currentMediaType || targetMediaType) && currentMediaType === targetMediaType ) {
+    return true
+  }
+  let requestBodyContent = state.getIn(["resolvedSubtrees", "paths", ...pathMethod, "requestBody", "content"], fromJS([]))
+  if (requestBodyContent.size < 2 || !currentMediaType || !targetMediaType) {
+    // nothing to compare
+    return false
+  }
+  let currentMediaTypeSchemaProperties = requestBodyContent.getIn([currentMediaType, "schema", "properties"], fromJS([]))
+  let targetMediaTypeSchemaProperties = requestBodyContent.getIn([targetMediaType, "schema", "properties"], fromJS([]))
+  return !!currentMediaTypeSchemaProperties.equals(targetMediaTypeSchemaProperties)
 }
 
 function returnSelfOrNewMap(obj) {

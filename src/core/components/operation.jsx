@@ -2,6 +2,7 @@ import React, { PureComponent } from "react"
 import PropTypes from "prop-types"
 import { getList } from "core/utils"
 import { getExtensions, sanitizeUrl, escapeDeepLinkPath } from "core/utils"
+import { safeBuildUrl } from "core/utils/url"
 import { Iterable, List } from "immutable"
 import ImPropTypes from "react-immutable-proptypes"
 
@@ -16,6 +17,7 @@ export default class Operation extends PureComponent {
 
     toggleShown: PropTypes.func.isRequired,
     onTryoutClick: PropTypes.func.isRequired,
+    onResetClick: PropTypes.func.isRequired,
     onCancelClick: PropTypes.func.isRequired,
     onExecute: PropTypes.func.isRequired,
 
@@ -47,6 +49,7 @@ export default class Operation extends PureComponent {
       request,
       toggleShown,
       onTryoutClick,
+      onResetClick,
       onCancelClick,
       onExecute,
       fn,
@@ -81,6 +84,7 @@ export default class Operation extends PureComponent {
       schemes
     } = op
 
+    const externalDocsUrl = externalDocs ? safeBuildUrl(externalDocs.url, specSelectors.url(), { selectedServer: oas3Selectors.selectedServer() }) : ""
     let operation = operationProps.getIn(["op"])
     let responses = operation.get("responses")
     let parameters = getList(operation, ["parameters"])
@@ -93,7 +97,7 @@ export default class Operation extends PureComponent {
     const Execute = getComponent( "execute" )
     const Clear = getComponent( "clear" )
     const Collapse = getComponent( "Collapse" )
-    const Markdown = getComponent( "Markdown" )
+    const Markdown = getComponent("Markdown", true)
     const Schemes = getComponent( "schemes" )
     const OperationServers = getComponent( "OperationServers" )
     const OperationExt = getComponent( "OperationExt" )
@@ -110,9 +114,11 @@ export default class Operation extends PureComponent {
 
     let onChangeKey = [ path, method ] // Used to add values to _this_ operation ( indexed by path and method )
 
+    const validationErrors = specSelectors.validationErrors([path, method])
+
     return (
         <div className={deprecated ? "opblock opblock-deprecated" : isShown ? `opblock opblock-${method} is-open` : `opblock opblock-${method}`} id={escapeDeepLinkPath(isShownKey.join("-"))} >
-        <OperationSummary operationProps={operationProps} toggleShown={toggleShown} getComponent={getComponent} authActions={authActions} authSelectors={authSelectors} specPath={specPath} />
+          <OperationSummary operationProps={operationProps} isShown={isShown} toggleShown={toggleShown} getComponent={getComponent} authActions={authActions} authSelectors={authSelectors} specPath={specPath} />
           <Collapse isOpened={isShown}>
             <div className="opblock-body">
               { (operation && operation.size) || operation === null ? null :
@@ -127,14 +133,16 @@ export default class Operation extends PureComponent {
                 </div>
               }
               {
-                externalDocs && externalDocs.url ?
+                externalDocsUrl ?
                 <div className="opblock-external-docs-wrapper">
                   <h4 className="opblock-title_normal">Find more details</h4>
                   <div className="opblock-external-docs">
-                    <span className="opblock-external-docs__description">
-                      <Markdown source={ externalDocs.description } />
-                    </span>
-                    <Link target="_blank" className="opblock-external-docs__link" href={sanitizeUrl(externalDocs.url)}>{externalDocs.url}</Link>
+                    {externalDocs.description &&
+                      <span className="opblock-external-docs__description">
+                        <Markdown source={ externalDocs.description } />
+                      </span> 
+                    }
+                    <Link target="_blank" className="opblock-external-docs__link" href={sanitizeUrl(externalDocsUrl)}>{externalDocsUrl}</Link>
                   </div>
                 </div> : null
               }
@@ -146,6 +154,7 @@ export default class Operation extends PureComponent {
                   operation={operation}
                   onChangeKey={onChangeKey}
                   onTryoutClick = { onTryoutClick }
+                  onResetClick = { onResetClick }
                   onCancelClick = { onCancelClick }
                   tryItOutEnabled = { tryItOutEnabled }
                   allowTryItOut={allowTryItOut}
@@ -185,6 +194,14 @@ export default class Operation extends PureComponent {
                   </div> : null
               }
 
+              { !tryItOutEnabled || !allowTryItOut || validationErrors.length <= 0 ? null : <div className="validation-errors errors-wrapper">
+                  Please correct the following validation errors and try again.
+                  <ul>
+                    { validationErrors.map((error, index) => <li key={index}> { error } </li>) }
+                  </ul>
+                </div>
+              }
+
             <div className={(!tryItOutEnabled || !response || !allowTryItOut) ? "execute-wrapper" : "btn-group"}>
               { !tryItOutEnabled || !allowTryItOut ? null :
 
@@ -192,9 +209,12 @@ export default class Operation extends PureComponent {
                     operation={ operation }
                     specActions={ specActions }
                     specSelectors={ specSelectors }
+                    oas3Selectors={ oas3Selectors }
+                    oas3Actions={ oas3Actions }
                     path={ path }
                     method={ method }
-                    onExecute={ onExecute } />
+                    onExecute={ onExecute }
+                    disabled={executeInProgress}/>
               }
 
               { (!tryItOutEnabled || !response || !allowTryItOut) ? null :

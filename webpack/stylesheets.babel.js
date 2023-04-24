@@ -7,8 +7,6 @@
 
 import path from "path"
 import MiniCssExtractPlugin from "mini-css-extract-plugin"
-import IgnoreAssetsPlugin from "ignore-assets-webpack-plugin"
-import OptimizeCSSAssetsPlugin from "optimize-css-assets-webpack-plugin"
 
 export default {
   mode: "production",
@@ -32,19 +30,27 @@ export default {
           {
             loader: "postcss-loader",
             options: {
-              sourceMap: true,
-              plugins: loader => [
-                require("cssnano")(),
-                require("autoprefixer")(),
-              ],
+              postcssOptions: {
+                sourceMap: true,
+                plugins: [
+                  require("cssnano")(),
+                  "postcss-preset-env" // applies autoprefixer
+                ],
+
+              }
             },
           },
           {
             loader: "sass-loader",
             options: {
-              outputStyle: "expanded",
+              // Prefer `dart-sass`
+              implementation: require("sass"),
               sourceMap: true,
-              sourceMapContents: "true",
+              sassOptions: {
+                // `fibers` package is not compatible with Node.js v16.0.0 or later
+                fiber: false, // disable auto attempt to load `fiber`
+                // sourceMapContents: "true", // if sourceMap: true, sassOptions.sourceMapContents is ignored
+              },
             },
           },
         ],
@@ -55,11 +61,6 @@ export default {
   plugins: [
     new MiniCssExtractPlugin({
       filename: "[name].css",
-    }),
-    new IgnoreAssetsPlugin({
-      // This is a hack to avoid a Webpack/MiniCssExtractPlugin bug, for more
-      // info see https://github.com/webpack-contrib/mini-css-extract-plugin/issues/151
-      ignore: ["swagger-ui.js", "swagger-ui.js.map"],
     }),
   ],
 

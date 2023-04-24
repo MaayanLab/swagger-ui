@@ -4,10 +4,11 @@ import ImPropTypes from "react-immutable-proptypes"
 
 export default class Auths extends React.Component {
   static propTypes = {
-    definitions: PropTypes.object.isRequired,
+    definitions: ImPropTypes.iterable.isRequired,
     getComponent: PropTypes.func.isRequired,
     authSelectors: PropTypes.object.isRequired,
     authActions: PropTypes.object.isRequired,
+    errSelectors: PropTypes.object.isRequired,
     specSelectors: PropTypes.object.isRequired
   }
 
@@ -27,7 +28,7 @@ export default class Auths extends React.Component {
     e.preventDefault()
 
     let { authActions } = this.props
-    authActions.authorize(this.state)
+    authActions.authorizeWithPersistOption(this.state)
   }
 
   logoutClick =(e) => {
@@ -38,7 +39,12 @@ export default class Auths extends React.Component {
       return key
     }).toArray()
 
-    authActions.logout(auths)
+    this.setState(auths.reduce((prev, auth) => {
+      prev[auth] = ""
+      return prev
+    }, {}))
+
+    authActions.logoutWithPersistOption(auths)
   }
 
   close =(e) => {
@@ -114,12 +120,4 @@ export default class Auths extends React.Component {
     )
   }
 
-  static propTypes = {
-    errSelectors: PropTypes.object.isRequired,
-    getComponent: PropTypes.func.isRequired,
-    authSelectors: PropTypes.object.isRequired,
-    specSelectors: PropTypes.object.isRequired,
-    authActions: PropTypes.object.isRequired,
-    definitions: ImPropTypes.iterable.isRequired
-  }
 }

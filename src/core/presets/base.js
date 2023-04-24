@@ -3,6 +3,7 @@ import layout from "core/plugins/layout"
 import spec from "core/plugins/spec"
 import view from "core/plugins/view"
 import samples from "core/plugins/samples"
+import requestSnippets from "core/plugins/request-snippets"
 import logs from "core/plugins/logs"
 import swaggerJs from "core/plugins/swagger-js"
 import auth from "core/plugins/auth"
@@ -12,6 +13,7 @@ import configsPlugin from "core/plugins/configs"
 import deepLinkingPlugin from "core/plugins/deep-linking"
 import filter from "core/plugins/filter"
 import onComplete from "core/plugins/on-complete"
+import safeRender from "core/plugins/safe-render"
 
 import OperationContainer from "core/containers/OperationContainer"
 
@@ -43,6 +45,7 @@ import OperationExtRow from "core/components/operation-extension-row"
 import HighlightCode from "core/components/highlight-code"
 import Responses from "core/components/responses"
 import Response from "core/components/response"
+import ResponseExtension from "core/components/response-extension"
 import ResponseBody from "core/components/response-body"
 import { Parameters } from "core/components/parameters"
 import ParameterExt from "core/components/parameter-extension"
@@ -60,6 +63,7 @@ import Info, {
 } from "core/components/info"
 import InfoContainer from "core/containers/info"
 import JumpToPath from "core/components/jump-to-path"
+import CopyToClipboardBtn from "core/components/copy-to-clipboard-btn"
 import Footer from "core/components/footer"
 import FilterContainer from "core/containers/filter"
 import ParamBody from "core/components/param-body"
@@ -110,6 +114,7 @@ export default function() {
       info: Info,
       InfoContainer,
       JumpToPath,
+      CopyToClipboardBtn,
       onlineValidatorBadge: OnlineValidatorBadge,
       operations: Operations,
       operation: Operation,
@@ -119,6 +124,7 @@ export default function() {
       highlightCode: HighlightCode,
       responses: Responses,
       response: Response,
+      ResponseExtension: ResponseExtension,
       responseBody: ResponseBody,
       parameters: Parameters,
       parameterRow: ParameterRow,
@@ -189,6 +195,8 @@ export default function() {
     downloadUrlPlugin,
     deepLinkingPlugin,
     filter,
-    onComplete
+    onComplete,
+    requestSnippets,
+    safeRender(),
   ]
 }

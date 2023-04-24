@@ -2,9 +2,11 @@ import React, { Component, } from "react"
 import PropTypes from "prop-types"
 import { List } from "immutable"
 import ImPropTypes from "react-immutable-proptypes"
+import { sanitizeUrl } from "core/utils"
 
 const braceOpen = "{"
 const braceClose = "}"
+const propClass = "property"
 
 export default class ObjectModel extends Component {
   static propTypes = {
@@ -19,12 +21,14 @@ export default class ObjectModel extends Component {
     isRef: PropTypes.bool,
     expandDepth: PropTypes.number,
     depth: PropTypes.number,
-    specPath: ImPropTypes.list.isRequired
+    specPath: ImPropTypes.list.isRequired,
+    includeReadOnly: PropTypes.bool,
+    includeWriteOnly: PropTypes.bool,
   }
 
   render(){
     let { schema, name, displayName, isRef, getComponent, getConfigs, depth, onToggle, expanded, specPath, ...otherProps } = this.props
-    let { specSelectors,expandDepth } = otherProps
+    let { specSelectors,expandDepth, includeReadOnly, includeWriteOnly} = otherProps
     const { isOAS3 } = specSelectors
 
     if(!schema) {
@@ -38,11 +42,18 @@ export default class ObjectModel extends Component {
     let additionalProperties = schema.get("additionalProperties")
     let title = schema.get("title") || displayName || name
     let requiredProperties = schema.get("required")
+    let infoProperties = schema
+      .filter( ( v, key) => ["maxProperties", "minProperties", "nullable", "example"].indexOf(key) !== -1 )
+    let deprecated = schema.get("deprecated")
+    let externalDocsUrl = schema.getIn(["externalDocs", "url"])
+    let externalDocsDescription = schema.getIn(["externalDocs", "description"])
 
     const JumpToPath = getComponent("JumpToPath", true)
-    const Markdown = getComponent("Markdown")
+    const Markdown = getComponent("Markdown", true)
     const Model = getComponent("Model")
     const ModelCollapse = getComponent("ModelCollapse")
+    const Property = getComponent("Property")
+    const Link = getComponent("Link")
 
     const JumpToPathSection = () => {
       return <span className="model-jump-to-path"><JumpToPath specPath={specPath} /></span>
@@ -79,28 +90,61 @@ export default class ObjectModel extends Component {
             {
               <table className="model"><tbody>
               {
-                !description ? null : <tr style={{ color: "#666", fontWeight: "normal" }}>
-                    <td style={{ fontWeight: "bold" }}>description:</td>
+                !description ? null : <tr className="description">
+                    <td>description:</td>
                     <td>
                       <Markdown source={ description } />
                     </td>
                   </tr>
               }
               {
-                !(properties && properties.size) ? null : properties.entrySeq().map(
+                externalDocsUrl &&
+                <tr className={"external-docs"}>
+                  <td>
+                    externalDocs:
+                  </td>
+                  <td>
+                    <Link target="_blank" href={sanitizeUrl(externalDocsUrl)}>{externalDocsDescription || externalDocsUrl}</Link>
+                  </td>
+                </tr>
+              }
+              {
+                !deprecated ? null :
+                  <tr className={"property"}>
+                    <td>
+                      deprecated:
+                    </td>
+                    <td>
+                      true
+                    </td>
+                  </tr>
+              }
+              {
+                !(properties && properties.size) ? null : properties.entrySeq().filter(
+                    ([, value]) => {
+                      return (!value.get("readOnly") || includeReadOnly) &&
+                        (!value.get("writeOnly") || includeWriteOnly)
+                    }
+                ).map(
                     ([key, value]) => {
                       let isDeprecated = isOAS3() && value.get("deprecated")
                       let isRequired = List.isList(requiredProperties) && requiredProperties.contains(key)
-                      let propertyStyle = { verticalAlign: "top", paddingRight: "0.2em" }
-                      if ( isRequired ) {
-                        propertyStyle.fontWeight = "bold"
+
+                      let classNames = ["property-row"]
+
+                      if (isDeprecated) {
+                        classNames.push("deprecated")
                       }
 
-                      return (<tr key={key} className={isDeprecated && "deprecated"}>
-                        <td style={ propertyStyle }>
-                          { key }{ isRequired && <span style={{ color: "red" }}>*</span> }
+                      if (isRequired) {
+                        classNames.push("required")
+                      }
+
+                      return (<tr key={key} className={classNames.join(" ")}>
+                        <td>
+                          { key }{ isRequired && <span className="star">*</span> }
                         </td>
-                        <td style={{ verticalAlign: "top" }}>
+                        <td>
                           <Model key={ `object-${name}-${key}_${value}` } { ...otherProps }
                                  required={ isRequired }
                                  getComponent={ getComponent }
@@ -113,8 +157,8 @@ export default class ObjectModel extends Component {
                     }).toArray()
               }
               {
-                // empty row befor extensions...
-                !showExtensions ? null : <tr>&nbsp;</tr>
+                // empty row before extensions...
+                !showExtensions ? null : <tr><td>&nbsp;</td></tr>
               }
               {
                 !showExtensions ? null :
@@ -126,11 +170,11 @@ export default class ObjectModel extends Component {
 
                       const normalizedValue = !value ? null : value.toJS ? value.toJS() : value
 
-                      return (<tr key={key} style={{ color: "#777" }}>
+                      return (<tr key={key} className="extension">
                         <td>
                           { key }
                         </td>
-                        <td style={{ verticalAlign: "top" }}>
+                        <td>
                           { JSON.stringify(normalizedValue) }
                         </td>
                       </tr>)
@@ -204,6 +248,9 @@ export default class ObjectModel extends Component {
         </span>
         <span className="brace-close">{ braceClose }</span>
       </ModelCollapse>
+      {
+        infoProperties.size ? infoProperties.entrySeq().map( ( [ key, v ] ) => <Property key={`${key}-${v}`} propKey={ key } propVal={ v } propClass={ propClass } />) : null
+      }
     </span>
   }
 }

@@ -4,10 +4,12 @@ import ImPropTypes from "react-immutable-proptypes"
 
 export default class BasicAuth extends React.Component {
   static propTypes = {
-    authorized: PropTypes.object,
+    authorized: ImPropTypes.map,
+    schema: ImPropTypes.map,
     getComponent: PropTypes.func.isRequired,
-    schema: PropTypes.object.isRequired,
-    onChange: PropTypes.func.isRequired
+    onChange: PropTypes.func.isRequired,
+    name: PropTypes.string.isRequired,
+    errSelectors: PropTypes.object.isRequired,
   }
 
   constructor(props, context) {
@@ -51,7 +53,7 @@ export default class BasicAuth extends React.Component {
     const Col = getComponent("Col")
     const AuthError = getComponent("authError")
     const JumpToPath = getComponent("JumpToPath", true)
-    const Markdown = getComponent( "Markdown" )
+    const Markdown = getComponent("Markdown", true)
     let username = this.getValue().username
     let errors = errSelectors.allErrors().filter( err => err.get("authId") === name)
 
@@ -66,15 +68,14 @@ export default class BasicAuth extends React.Component {
           <label>Username:</label>
           {
             username ? <code> { username } </code>
-                     : <Col><Input type="text" required="required" name="username" onChange={ this.onChange }/></Col>
+                     : <Col><Input type="text" required="required" name="username" onChange={ this.onChange } autoFocus/></Col>
           }
         </Row>
         <Row>
           <label>Password:</label>
             {
               username ? <code> ****** </code>
-                       : <Col><Input required="required"
-                                     autoComplete="new-password"
+                       : <Col><Input autoComplete="new-password"
                                      name="password"
                                      type="password"
                                      onChange={ this.onChange }/></Col>
@@ -90,12 +91,4 @@ export default class BasicAuth extends React.Component {
     )
   }
 
-  static propTypes = {
-    name: PropTypes.string.isRequired,
-    errSelectors: PropTypes.object.isRequired,
-    getComponent: PropTypes.func.isRequired,
-    onChange: PropTypes.func,
-    schema: ImPropTypes.map,
-    authorized: ImPropTypes.map
-  }
 }
